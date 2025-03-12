@@ -2,7 +2,11 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from models import TrendingRepo, engine
 from sqlalchemy.orm import Session
-import os
+from sqlalchemy import create_engine
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+from scraper import GitHubTrendingScraper
 
 app = FastAPI()
 
@@ -14,16 +18,33 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
-
+scheduler = BackgroundScheduler()
 # 确保数据库连接配置正确
 if not engine:
     engine = create_engine('mysql+pymysql://root:123456@localhost:3306/github_trending')
+
+
+# 定义定时任务
+@scheduler.scheduled_job('cron', hour=0, minute=40)
+def scheduled_scrape():
+    print(f'[{datetime.now()}] 开始执行定时任务...')
+    scraper = GitHubTrendingScraper()
+    repos = scraper.scrape()
+    scraper.save_to_database(repos)
+    print(f'[{datetime.now()}] 定时任务执行完成')
+
+
+@app.on_event("startup")
+async def startup_event():
+    scheduler.start()
+
 
 @app.get("/repos")
 def get_all_repos():
     with Session(engine) as session:
         repos = session.query(TrendingRepo).all()
         return repos
+
 
 @app.get("/repos/filter")
 def filter_repos(
@@ -51,24 +72,6 @@ def filter_repos(
         repos = query.offset(offset).limit(limit).all()
         return repos
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
-from scraper import GitHubTrendingScraper
-
-scheduler = BackgroundScheduler()
-
-# 定义定时任务
-@scheduler.scheduled_job('cron', hour=0, minute=40)
-def scheduled_scrape():
-    print(f'[{datetime.now()}] 开始执行定时任务...')
-    scraper = GitHubTrendingScraper()
-    repos = scraper.scrape()
-    scraper.save_to_database(repos)
-    print(f'[{datetime.now()}] 定时任务执行完成')
-
-@app.on_event("startup")
-async def startup_event():
-    scheduler.start()
 
 @app.get("/weekly-repos")
 async def get_weekly_repos():
@@ -80,6 +83,7 @@ async def get_weekly_repos():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
 @app.get('/monthly-repos')
 async def get_monthly_repos():
     try:
@@ -89,6 +93,7 @@ async def get_monthly_repos():
         return {"status": "success", "message": repos}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
 
 @app.get("/daily-repos")
 async def scrape_and_save():
