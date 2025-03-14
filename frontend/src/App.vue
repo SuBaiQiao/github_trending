@@ -2,14 +2,13 @@
   <div class="app-container">
     <Sidebar />
     <div class="content">
-      <RouterView />
+      <RouterView style="height: 100% !important;"/>
     </div>
   </div>
 </template>
 
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
-// import RepoTable from './components/RepoTable.vue'
 </script>
 
 <style>

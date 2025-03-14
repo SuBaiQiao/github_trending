@@ -4,6 +4,7 @@ from models import TrendingRepo, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 import math
+import result_utils
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
@@ -44,7 +45,7 @@ async def startup_event():
 def get_all_repos():
     with Session(engine) as session:
         repos = session.query(TrendingRepo).all()
-        return {'count': len(repos), 'data': repos}
+        return result_utils.success(data={'count': len(repos), 'data': repos})
 
 
 @app.get("/repos/filter")
@@ -79,7 +80,7 @@ def filter_repos(
         if limit > 0:
             count_limit = math.ceil(count / limit)
         repos = query.offset(offset).limit(limit).all()
-        return {'count': count, 'data': repos, 'count_limit': count_limit}
+        return result_utils.success(data={'count': count, 'data': repos, 'count_limit': count_limit})
 
 
 @app.get("/weekly-repos")
@@ -88,9 +89,9 @@ async def get_weekly_repos():
         scraper = GitHubTrendingScraper()
         repos = scraper.scrape(type='weekly')
         scraper.save_to_database(repos)
-        return {"status": "success", "message": repos}
+        return result_utils.success(data=repos)
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return result_utils.error(message=str(e))
 
 
 @app.get('/monthly-repos')
@@ -99,9 +100,9 @@ async def get_monthly_repos():
         scraper = GitHubTrendingScraper()
         repos = scraper.scrape(type='monthly')
         scraper.save_to_database(repos)
-        return {"status": "success", "message": repos}
+        return result_utils.success(data=repos)
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return result_utils.error(message=str(e))
 
 
 @app.get("/daily-repos")
@@ -110,9 +111,9 @@ async def scrape_and_save():
         scraper = GitHubTrendingScraper()
         repos = scraper.scrape()
         scraper.save_to_database(repos)
-        return {"status": "success", "message": repos}
+        return result_utils.success(data=repos)
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return result_utils.error(message=str(e))
 
 if __name__ == "__main__":
     import uvicorn
