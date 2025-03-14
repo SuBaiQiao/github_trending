@@ -1,38 +1,85 @@
 <template>
+  <div>
+      <a-segmented v-model:value="selectedType" :options="typeOptions" style="margin-right: 16px;"></a-segmented>
+  </div>
   <div class="repo-table">
     <table>
       <thead>
         <tr>
+          <th>序号</th>
           <th>项目名称</th>
           <th>作者</th>
           <th>语言</th>
           <th>星标数</th>
+          <th>保存日期</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="repo in repos" :key="repo.id">
+        <tr v-for="(repo, index) in repos" :key="repo.id">
+          <td>{{ (pageNum - 1) * pageSize + index + 1 }}</td>
           <td>{{ repo.title }}</td>
           <td>{{ repo.author }}</td>
           <td>{{ repo.language }}</td>
           <td>{{ repo.stars }}</td>
+          <td>{{ dayjs(repo.created_at).format('YYYY-MM-DD') }}</td>
         </tr>
       </tbody>
     </table>
+    <div style="margin-top: 10px;">
+      <span style="margin-right: 20px">总条数：{{ total }}</span>
+      <span @click="pageNumChange(item)" :class="['pageSize', item === pageNum ? 'active' : '']" v-for="item in count_limit" :key="item">{{ item }}</span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
-const repos = ref([])
+import {onMounted, ref, watchEffect} from 'vue';
+const repos = ref([]);
+const count_limit = ref(0);
+const pageSize = ref(20);
+const pageNum = ref(1);
+const total = ref(0);
+const selectedType = ref('日')
+const typeOptions = ['日', '周', '月'];
+import dayjs from "dayjs";
 
 const fetchData = async () => {
-  const resp = await fetch('http://localhost:8000/repos/filter')
-  const data = await resp.json()
-  repos.value = data
+  let type;
+  switch (selectedType.value) {
+    case '日':
+      type = 'daily';
+      break;
+    case '周':
+      type = 'weekly';
+      break;
+    case '月':
+      type = 'monthly';
+      break;
+    default:
+      type = 'daily';
+  }
+  const params = new URLSearchParams({
+      limit: pageSize.value,
+      offset: pageSize.value * ( pageNum.value -1 ) + 1,
+      type: type
+  });
+  const resp = await fetch(`http://localhost:8000/repos/filter?${params}`);
+  const data = await resp.json();
+  count_limit.value = data.count_limit;
+  total.value = data.count;
+  repos.value = data.data;
 }
 
+const pageNumChange = (item) => {
+  pageNum.value = item;
+}
+
+watchEffect(() => {
+  fetchData();
+})
+
 onMounted(() => {
-  fetchData()
+  fetchData();
 })
 </script>
 
@@ -55,5 +102,14 @@ th, td {
 
 th {
   background-color: #f5f5f5;
+}
+
+.pageSize {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.pageSize.active {
+  color: #3b8dff;
 }
 </style>

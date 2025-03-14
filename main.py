@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import TrendingRepo, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
+import math
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
@@ -43,7 +44,7 @@ async def startup_event():
 def get_all_repos():
     with Session(engine) as session:
         repos = session.query(TrendingRepo).all()
-        return repos
+        return {'count': len(repos), 'data': repos}
 
 
 @app.get("/repos/filter")
@@ -51,11 +52,13 @@ def filter_repos(
     language: str = Query(None),
     author: str = Query(None),
     stars: str = Query(None),
+    type: str = Query(None),
     limit: int = Query(10),
-    offset: int = Query(0),
-    sort_by: str = Query(None, description="Sort by field (title, author, language, stars)"),
-    order: str = Query("asc", description="Sort order (asc or desc)")
+    offset: int = Query(1),
+    sort_by: str = Query("created_at", description="Sort by field (created_at, title, author, language, stars)"),
+    order: str = Query("desc", description="Sort order (asc or desc)")
 ):
+    offset = offset - 1
     with Session(engine) as session:
         query = session.query(TrendingRepo)
         if language:
@@ -64,13 +67,19 @@ def filter_repos(
             query = query.filter(TrendingRepo.author == author)
         if stars:
             query = query.filter(TrendingRepo.stars == stars)
+        if type:
+            query = query.filter(TrendingRepo.type == type)
         if sort_by:
             if order == "desc":
                 query = query.order_by(getattr(TrendingRepo, sort_by).desc())
             else:
                 query = query.order_by(getattr(TrendingRepo, sort_by))
+        count = query.count()
+        count_limit = 0
+        if limit > 0:
+            count_limit = math.ceil(count / limit)
         repos = query.offset(offset).limit(limit).all()
-        return repos
+        return {'count': count, 'data': repos, 'count_limit': count_limit}
 
 
 @app.get("/weekly-repos")
