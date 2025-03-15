@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class TrendingRepo(Base):
     __tablename__ = 'trending_repos'
     id = Column(Integer, primary_key=True)
@@ -14,6 +15,7 @@ class TrendingRepo(Base):
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False),
     type = Column(String(20), nullable=False, comment='daily, weekly, monthly')
+
 
 # Database connection string
 DATABASE_URI = 'mysql+pymysql://root:123456@localhost:3306/github_trending'

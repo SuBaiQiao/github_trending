@@ -2,13 +2,13 @@
   <div class="app-container">
     <Sidebar />
     <div class="content">
-      <RouterView style="height: 100% !important;"/>
+      <RouterView style="height: 100% !important" />
     </div>
   </div>
 </template>
 
 <script setup>
-import Sidebar from '@/components/Sidebar.vue'
+import Sidebar from "@/components/Sidebar.vue";
 </script>
 
 <style>
@@ -20,5 +20,6 @@ import Sidebar from '@/components/Sidebar.vue'
 .content {
   flex: 1;
   padding: 20px;
+  overflow-y: auto;
 }
 </style>

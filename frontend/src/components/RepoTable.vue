@@ -34,16 +34,16 @@
           </tr>
         </tbody>
       </table>
-      <div style="margin-top: 10px">
-        <span style="margin-right: 20px">总条数：{{ total }}</span>
-        <span
-          @click="pageNumChange(item)"
-          :class="['pageSize', item === pageNum ? 'active' : '']"
-          v-for="item in count_limit"
-          :key="item"
-          >{{ item }}</span
-        >
-      </div>
+    </div>
+    <div style="margin-top: 10px">
+      <span style="margin-right: 20px">总条数：{{ total }}</span>
+      <span
+        @click="pageNumChange(item)"
+        :class="['pageSize', item === pageNum ? 'active' : '']"
+        v-for="item in count_limit"
+        :key="item"
+        >{{ item }}</span
+      >
     </div>
   </a-spin>
 </template>
@@ -117,6 +117,8 @@ onMounted(() => {
 .repo-table {
   width: 100%;
   padding: 20px;
+  height: calc(100vh - 32px - 27px - 40px);
+  overflow-y: auto;
 }
 
 table {
